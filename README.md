@@ -58,14 +58,14 @@ cd palette-frontend
 npm install
 npm run dev
 ```
-Frontend web app normalmente se corre en el purto http://localhost:5173
+Frontend web app normalmente se corre en el puerto http://localhost:5173
 ### Backend
 ```
 cd palette-backend
 pip install -r requirements.txt
 python app.py
 ```
-Backend server normalmente se corre en el purto http://localhost:5000
+Backend server normalmente se corre en el puerto http://localhost:5000
 
 ---
 Hecho por: 
