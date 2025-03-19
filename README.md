@@ -1,4 +1,4 @@
-# **Proyecto Palette:**
+# **Proyecto Palette**
 
 ## Descripción
 Palette es una aplicación que **analiza una imagen y calcula el porcentaje de cada color** que se encuentra presente en ella
