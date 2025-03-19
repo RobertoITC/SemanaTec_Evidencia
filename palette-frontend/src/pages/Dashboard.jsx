@@ -69,7 +69,9 @@ export default function Dashboard() {
     };
 
     return (
-        <div className="h-screen w-screen bg-gray-50 p-6 relative">
+        <div className="h-screen w-screen bg-gray-50 p-6 relative flex">
+
+
             {/* Loading overlay if needed */}
             {isLoading && (
                 <div className="absolute inset-0 bg-white/70 z-50 flex items-center justify-center">
@@ -77,70 +79,55 @@ export default function Dashboard() {
                 </div>
             )}
 
-            <h1 className="text-3xl font-bold mb-4">
-                <ColourfulText text="Color Palette Extractor" color="blue" />
-            </h1>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Drag & Drop zone */}
-                <div
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    className="border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer"
-                >
-                    {selectedFile ? (
-                        <p className="text-center font-semibold">File: {selectedFile.name}</p>
-                    ) : (
-                        <p className="text-center text-gray-500">
-                            Drag & drop an image here, or click below to select one
-                        </p>
-                    )}
-                </div>
+            {/* Left side: Text and Form */}
+            <div className="flex flex-col items-center justify-center w-1/2 pl-10 h-full">
 
-                {/* Fallback file input */}
-                <div>
-                    <label className="block font-semibold mb-1">Upload Image:</label>
-                    <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className="block"
-                    />
-                </div>
+                <form onSubmit={handleSubmit} className="space-y-4 w-full flex flex-col items-center justify-center">
+                    {/* Textual Information */}
 
-                {/* Show a small preview if a file is selected */}
-                {selectedFile && (
-                    <div className="mt-2">
-                        <img
-                            src={URL.createObjectURL(selectedFile)}
-                            alt="preview"
-                            className="max-w-xs border"
+
+
+                        <label className="block font-semibold mb-1">Upload your image to extract the color palette</label>
+                        <label className="block font-semibold mb-1">Number of Colors to Extract:</label>
+                        <input
+                            type="number"
+                            value={numColors}
+                            onChange={(e) => setNumColors(e.target.value)}
+                            className="border rounded p-1"
+                            min="1"
                         />
-                    </div>
-                )}
 
-                {/* Number of colors field if required */}
-                <div>
-                    <label className="block font-semibold mb-1">
-                        Number of Colors to Extract:
-                    </label>
-                    <input
-                        type="number"
-                        value={numColors}
-                        onChange={(e) => setNumColors(e.target.value)}
-                        className="border rounded p-1"
-                        min="1"
+
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                        Extract Palette
+                    </button>
+                </form>
+            </div>
+            <div className="h-screen w-[50%] flex flex-col items-center justify-center ">
+            {/* Right side: Image Upload & Drag-and-Drop Zone */}
+            <div
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                className="w-[70%] h-64 border border-white rounded-lg p-6 cursor-pointer flex items-center justify-center shadow-2xl ml-auto mr-auto"
+            >
+                {selectedFile ? (
+                    <img
+                        src={URL.createObjectURL(selectedFile)}
+                        alt="Selected file"
+                        className="max-w-full max-h-full object-contain"
                     />
-                </div>
-
-                <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                    Extract Palette
-                </button>
-            </form>
+                ) : (
+                    <p className="text-center text-gray-500">
+                        Drag & drop an image here, or click below to select one
+                    </p>
+                )}
+            </div>
+            </div>
         </div>
     );
 }
