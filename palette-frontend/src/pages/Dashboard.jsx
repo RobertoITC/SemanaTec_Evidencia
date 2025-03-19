@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
 import ColourfulText from '../components/ui/colourful-text.jsx';
 
-//C:\Users\hanni\WebstormProjects\SemanaTec_Evidencia\palette-frontend\src\components\ui\colourful-text.jsx
-
 export default function Dashboard() {
     const [selectedFile, setSelectedFile] = useState(null);
     const [numColors, setNumColors] = useState(5);
-    // Mantén los estados para filtros aunque ya no los mostremos en la UI:
     const [brightness, setBrightness] = useState(0);
     const [contrast, setContrast] = useState(0);
     const [grayscale, setGrayscale] = useState(false);
@@ -33,7 +30,6 @@ export default function Dashboard() {
         formData.append('image', selectedFile);
         formData.append('n_colors', numColors);
 
-        // Estos siguen presentes pero ahora se aplican únicamente en backend:
         formData.append('brightness', brightness);
         formData.append('contrast', contrast);
         formData.append('grayscale', grayscale);
@@ -51,35 +47,37 @@ export default function Dashboard() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
-            <h1 className="text-3xl font-bold mb-4">
-                <ColourfulText text="Color Palette Extractor" color="blue" />
-            </h1>
+        <div className="h-screen w-screen bg-white p-6">
+            <div className="flex flex-col items-left justify-center border-b-2 mb-6 border-gray-200">
+                <h1 className="text-3xl font-bold mb-4">
+                    <ColourfulText text="Color Palette Extractor" color="blue" />
+                </h1>
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Drag & Drop zone */}
-                <div
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    className="border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer"
-                >
-                    {selectedFile ? (
-                        <p className="text-center font-semibold">File: {selectedFile.name}</p>
-                    ) : (
-                        <p className="text-center text-gray-500">
-                            Drag & drop an image here, or click below to select
+                <div className="flex space-x-4">
+                    {/* Left Section: Text */}
+                    <div className="w-1/2">
+                        <p className="text-lg font-medium text-gray-500">
+                            Upload your image to extract the color palette
                         </p>
-                    )}
-                </div>
+                    </div>
 
-                {/* Fallback File Upload (optional) */}
-                <div>
-                    <label className="block font-semibold mb-1">Upload Image (Fallback):</label>
-                    <input
-                        type="file"
-                        onChange={(e) => setSelectedFile(e.target.files[0])}
-                        className="block"
-                    />
+                    {/* Right Section: Drag and Drop */}
+                    <div
+                        onDrop={handleDrop}
+                        onDragOver={handleDragOver}
+                        className="w-1/2 border-1 border-white rounded-lg p-6 cursor-pointer text-lg font-medium h-80 shadow-lg"
+
+                    >
+                        {selectedFile ? (
+                            <p className="text-center font-semibold">File: {selectedFile.name}</p>
+                        ) : (
+                            <p className="text-center text-gray-500">
+                                Drag & drop an image here, or click below to select
+                            </p>
+                        )}
+                    </div>
                 </div>
 
                 {/* Show image preview if available */}
@@ -92,25 +90,6 @@ export default function Dashboard() {
                         />
                     </div>
                 )}
-
-                {/* Number of Colors */}
-                <div>
-                    <label className="block font-semibold mb-1">
-                        Number of Colors to Extract:
-                    </label>
-                    <input
-                        type="number"
-                        value={numColors}
-                        onChange={(e) => setNumColors(e.target.value)}
-                        className="border rounded p-1"
-                        min="1"
-                    />
-                </div>
-
-                {/*
-                  Sección de filtros removida de la UI pero las variables siguen existiendo arriba
-                  y se envían al backend internamente.
-                */}
 
                 {/* Submit Button */}
                 <button
