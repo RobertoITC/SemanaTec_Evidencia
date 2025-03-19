@@ -5,19 +5,21 @@ import ColourfulText from '../components/ui/colourful-text.jsx';
 export default function Dashboard() {
     const navigate = useNavigate();
 
+    // Single-file approach; do not call .length on a File object
     const [selectedFile, setSelectedFile] = useState(null);
-    const [numColors, setNumColors] = useState(5);
-    const [brightness, setBrightness] = useState(0);
-    const [contrast, setContrast] = useState(0);
-    const [grayscale, setGrayscale] = useState(false);
 
-    const [palette, setPalette] = useState([]);
+    // If your backend expects these, keep them; otherwise remove
+    const [numColors, setNumColors] = useState(5);
+    const [brightness] = useState(0);
+    const [contrast] = useState(0);
+    const [grayscale] = useState(false);
+
     const [isLoading, setIsLoading] = useState(false);
 
-    // Drag & Drop handlers
     const handleDrop = (e) => {
         e.preventDefault();
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            // We only need the first file
             setSelectedFile(e.dataTransfer.files[0]);
         }
     };
@@ -26,13 +28,18 @@ export default function Dashboard() {
         e.preventDefault();
     };
 
+    const handleFileChange = (e) => {
+        // again, single file
+        if (e.target.files && e.target.files[0]) {
+            setSelectedFile(e.target.files[0]);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!selectedFile) return;
 
         setIsLoading(true);
-
-        // Build FormData
         const formData = new FormData();
         formData.append('image', selectedFile);
         formData.append('n_colors', numColors);
@@ -46,12 +53,11 @@ export default function Dashboard() {
                 body: formData,
             });
             const data = await response.json();
-            setPalette(data.palette);
+            // Example: data.clusters => array of { hex, percentage, avg_x, avg_y }
 
-            // Navigate to /results after success, passing data via state
             navigate('/results', {
                 state: {
-                    palette: data.palette,
+                    clusters: data.clusters,
                     imageURL: URL.createObjectURL(selectedFile),
                 },
             });
@@ -63,46 +69,46 @@ export default function Dashboard() {
     };
 
     return (
-        <div className="h-screen w-screen bg-white p-6">
-            <div className="flex flex-col items-left justify-center border-b-2 mb-6 border-gray-200">
-                <h1 className="text-3xl font-bold mb-4">
-                    <ColourfulText text="Color Palette Extractor" color="blue" />
-                </h1>
-            </div>
-
-            {/* If we're loading, show a centered spinner overlay */}
+        <div className="h-screen w-screen bg-gray-50 p-6 relative">
+            {/* Loading overlay if needed */}
             {isLoading && (
-                <div className="fixed inset-0 bg-white bg-opacity-70 flex items-center justify-center z-50">
+                <div className="absolute inset-0 bg-white/70 z-50 flex items-center justify-center">
                     <div className="loader ease-linear rounded-full border-4 border-t-4 border-blue-200 h-12 w-12 animate-spin" />
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="flex space-x-4">
-                    {/* Left Section: Description */}
-                    <div className="w-1/2">
-                        <p className="text-lg font-medium text-gray-500">
-                            Upload your image to extract the color palette
-                        </p>
-                    </div>
+            <h1 className="text-3xl font-bold mb-4">
+                <ColourfulText text="Color Palette Extractor" color="blue" />
+            </h1>
 
-                    {/* Right Section: Drag and Drop */}
-                    <div
-                        onDrop={handleDrop}
-                        onDragOver={handleDragOver}
-                        className="w-1/2 border-1 border-white rounded-lg p-6 cursor-pointer text-lg font-medium h-80 shadow-lg"
-                    >
-                        {selectedFile ? (
-                            <p className="text-center font-semibold">File: {selectedFile.name}</p>
-                        ) : (
-                            <p className="text-center text-gray-500">
-                                Drag & drop an image here, or click below to select
-                            </p>
-                        )}
-                    </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Drag & Drop zone */}
+                <div
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer"
+                >
+                    {selectedFile ? (
+                        <p className="text-center font-semibold">File: {selectedFile.name}</p>
+                    ) : (
+                        <p className="text-center text-gray-500">
+                            Drag & drop an image here, or click below to select one
+                        </p>
+                    )}
                 </div>
 
-                {/* Show image preview if available */}
+                {/* Fallback file input */}
+                <div>
+                    <label className="block font-semibold mb-1">Upload Image:</label>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="block"
+                    />
+                </div>
+
+                {/* Show a small preview if a file is selected */}
                 {selectedFile && (
                     <div className="mt-2">
                         <img
@@ -113,30 +119,28 @@ export default function Dashboard() {
                     </div>
                 )}
 
-                {/* Submit Button */}
+                {/* Number of colors field if required */}
+                <div>
+                    <label className="block font-semibold mb-1">
+                        Number of Colors to Extract:
+                    </label>
+                    <input
+                        type="number"
+                        value={numColors}
+                        onChange={(e) => setNumColors(e.target.value)}
+                        className="border rounded p-1"
+                        min="1"
+                    />
+                </div>
+
                 <button
                     type="submit"
+                    disabled={isLoading}
                     className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                 >
                     Extract Palette
                 </button>
             </form>
-
-            {/* Palette Display (only needed if you want to see the result on the same page) */}
-            {palette.length > 0 && (
-                <div className="mt-6">
-                    <h2 className="text-2xl font-bold mb-2">Palette:</h2>
-                    <div className="flex space-x-2">
-                        {palette.map((color, idx) => (
-                            <div
-                                key={idx}
-                                className="w-16 h-16 border"
-                                style={{ backgroundColor: color }}
-                            />
-                        ))}
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
