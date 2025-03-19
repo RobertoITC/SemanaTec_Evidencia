@@ -5,84 +5,109 @@ from sklearn.cluster import KMeans
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # Habilita CORS para permitir peticiones desde el frontend de React
+CORS(app)  # Enable CORS for React
 
 def apply_auto_preprocessing(image):
     """
-    Aplica un preprocesamiento ligero para resaltar
-    mejor los colores y ayudar a agruparlos.
-    - Pequeño desenfoque Gaussiano
-    - Aumento de saturación
-    - Contraste ligero (opcional)
+    Optional pre-processing function to lightly enhance colors.
     """
-
-    # 1. Pequeño desenfoque Gaussiano
+    # 1. Small Gaussian blur
     blurred = cv2.GaussianBlur(image, (3, 3), 0)
 
-    # 2. Aumento de saturación (convertimos de BGR a HSV)
+    # 2. Convert to HSV and increase saturation by ~20%
     hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
     h, s, v = cv2.split(hsv)
-
-    # Incrementamos saturación al ~120%
     s = np.clip(s * 1.2, 0, 255).astype(np.uint8)
-
     hsv_boosted = cv2.merge([h, s, v])
     saturated = cv2.cvtColor(hsv_boosted, cv2.COLOR_HSV2BGR)
 
-    # 3. Ajuste leve de contraste (si se desea, aquí es muy básico)
-    # Convertimos a float para manipular
+    # 3. Small contrast boost
     contrast_img = saturated.astype(np.int16)
-    # Un factor bajo de contraste, p. ej. 10 en el rango [-100..100]
-    contrast_factor = 10
+    contrast_factor = 10  # mild factor in [-100..100]
     contrast_img = contrast_img * (contrast_factor / 127 + 1) - contrast_factor
     contrast_img = np.clip(contrast_img, 0, 255).astype(np.uint8)
 
     return contrast_img
 
-def extract_palette(image, n_colors=5):
+def extract_palette_info(image, n_colors=5):
     """
-    Aplica K-means para extraer n_colors colores dominantes en la imagen.
-    Devuelve una lista de tuplas (R,G,B).
+    Runs K-means to find n_colors dominant colors and computes:
+    - HEX color
+    - Percentage of each color
+    - Average (x,y) location in normalized coords [0..1]
     """
-    # Convertir de BGR a RGB (convención habitual de procesamiento)
-    img_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    height, width, _ = image.shape
 
-    # Aplanar la imagen a un arreglo de forma (total_pixeles, 3)
+    # Convert BGR -> RGB
+    img_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    # Flatten: (height*width, 3)
     img_flat = img_rgb.reshape((-1, 3))
 
     kmeans = KMeans(n_clusters=n_colors, random_state=42)
     kmeans.fit(img_flat)
 
-    # Centroides, que representan los colores dominantes
-    colors = kmeans.cluster_centers_.astype(int)
-    palette = [tuple(color) for color in colors]
-    return palette
+    centers = kmeans.cluster_centers_.astype(int)  # shape (n_colors, 3)
+    labels = kmeans.labels_  # which cluster each pixel belongs to
+
+    unique, counts = np.unique(labels, return_counts=True)
+    total_pixels = len(labels)
+
+    clusters_info = []
+    for cluster_idx in range(n_colors):
+        # (R,G,B) from centers
+        (r, g, b) = centers[cluster_idx]
+        color_hex = f'#{r:02x}{g:02x}{b:02x}'
+
+        # Count pixels in this cluster
+        pixel_count = counts[cluster_idx] if cluster_idx in unique else 0
+        percentage = (pixel_count / total_pixels) * 100
+
+        # Find average x,y for cluster
+        cluster_pixels = np.where(labels == cluster_idx)[0]  # 1D indices
+        if len(cluster_pixels) > 0:
+            y_coords = cluster_pixels // width
+            x_coords = cluster_pixels % width
+            avg_y = np.mean(y_coords)
+            avg_x = np.mean(x_coords)
+            # Normalize to [0..1]
+            avg_y_norm = avg_y / float(height)
+            avg_x_norm = avg_x / float(width)
+        else:
+            avg_x_norm, avg_y_norm = 0.5, 0.5  # fallback if no pixels
+
+        clusters_info.append({
+            'hex': color_hex,
+            'percentage': percentage,
+            'avg_x': avg_x_norm,
+            'avg_y': avg_y_norm,
+        })
+
+    return clusters_info
 
 @app.route('/extract_palette', methods=['POST'])
 def extract_palette_route():
     """
-    Endpoint principal que recibe una imagen y el número de colores (n_colors).
-    Aplica un preprocesamiento ligero y extrae la paleta de colores dominantes.
-    Devuelve un JSON con los colores en formato hexadecimal.
+    Main endpoint that:
+    - Receives an image
+    - Optionally does light preprocessing
+    - Extracts dominant colors with their percentages and avg positions
+    - Returns JSON with clusters info
     """
-    # Recibe el archivo de la imagen y el número de colores a extraer
     file = request.files['image']
     n_colors = int(request.form.get('n_colors', 5))
 
-    # Leer la imagen en memoria y decodificar con OpenCV
+    # Decode image
     file_bytes = np.frombuffer(file.read(), np.uint8)
     image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
 
-    # Preprocesamiento automático (blur + saturación + pequeño contraste)
+    # Auto preprocessing (optional)
     image = apply_auto_preprocessing(image)
 
-    # Extraer paleta de colores
-    palette_rgb = extract_palette(image, n_colors)
+    # Get color info
+    clusters_info = extract_palette_info(image, n_colors)
 
-    # Convertir cada (R,G,B) a formato HEX
-    palette_hex = [f'#{r:02x}{g:02x}{b:02x}' for (r, g, b) in palette_rgb]
-
-    return jsonify({'palette': palette_hex})
+    # Return array of objects
+    return jsonify({'clusters': clusters_info})
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
