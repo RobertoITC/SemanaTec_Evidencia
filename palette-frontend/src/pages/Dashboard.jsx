@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import ColourfulText from '../components/ui/colourful-text.jsx';
+
+//C:\Users\hanni\WebstormProjects\SemanaTec_Evidencia\palette-frontend\src\components\ui\colourful-text.jsx
 
 export default function Dashboard() {
     const [selectedFile, setSelectedFile] = useState(null);
@@ -34,7 +37,9 @@ export default function Dashboard() {
 
     return (
         <div className="min-h-screen bg-gray-50 p-6">
-            <h1 className="text-3xl font-bold mb-4">Color Palette Extractor</h1>
+            <h1 className="text-3xl font-bold mb-4">
+                <ColourfulText text="Color Palette Extractor" color="blue" />
+            </h1>
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 {/* File Upload */}
