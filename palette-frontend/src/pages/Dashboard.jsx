@@ -6,10 +6,23 @@ import ColourfulText from '../components/ui/colourful-text.jsx';
 export default function Dashboard() {
     const [selectedFile, setSelectedFile] = useState(null);
     const [numColors, setNumColors] = useState(5);
+    // Mantén los estados para filtros aunque ya no los mostremos en la UI:
     const [brightness, setBrightness] = useState(0);
     const [contrast, setContrast] = useState(0);
     const [grayscale, setGrayscale] = useState(false);
+
     const [palette, setPalette] = useState([]);
+
+    // Drag & Drop handlers
+    const handleDrop = (e) => {
+        e.preventDefault();
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            setSelectedFile(e.dataTransfer.files[0]);
+        }
+    };
+    const handleDragOver = (e) => {
+        e.preventDefault();
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -19,6 +32,8 @@ export default function Dashboard() {
         const formData = new FormData();
         formData.append('image', selectedFile);
         formData.append('n_colors', numColors);
+
+        // Estos siguen presentes pero ahora se aplican únicamente en backend:
         formData.append('brightness', brightness);
         formData.append('contrast', contrast);
         formData.append('grayscale', grayscale);
@@ -42,15 +57,41 @@ export default function Dashboard() {
             </h1>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-                {/* File Upload */}
+                {/* Drag & Drop zone */}
+                <div
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer"
+                >
+                    {selectedFile ? (
+                        <p className="text-center font-semibold">File: {selectedFile.name}</p>
+                    ) : (
+                        <p className="text-center text-gray-500">
+                            Drag & drop an image here, or click below to select
+                        </p>
+                    )}
+                </div>
+
+                {/* Fallback File Upload (optional) */}
                 <div>
-                    <label className="block font-semibold mb-1">Upload Image:</label>
+                    <label className="block font-semibold mb-1">Upload Image (Fallback):</label>
                     <input
                         type="file"
                         onChange={(e) => setSelectedFile(e.target.files[0])}
                         className="block"
                     />
                 </div>
+
+                {/* Show image preview if available */}
+                {selectedFile && (
+                    <div className="mt-2">
+                        <img
+                            src={URL.createObjectURL(selectedFile)}
+                            alt="preview"
+                            className="max-w-xs border"
+                        />
+                    </div>
+                )}
 
                 {/* Number of Colors */}
                 <div>
@@ -66,43 +107,10 @@ export default function Dashboard() {
                     />
                 </div>
 
-                {/* Brightness */}
-                <div>
-                    <label className="block font-semibold mb-1">Brightness:</label>
-                    <input
-                        type="range"
-                        value={brightness}
-                        onChange={(e) => setBrightness(e.target.value)}
-                        min="-100"
-                        max="100"
-                        className="w-full"
-                    />
-                    <span>{brightness}</span>
-                </div>
-
-                {/* Contrast */}
-                <div>
-                    <label className="block font-semibold mb-1">Contrast:</label>
-                    <input
-                        type="range"
-                        value={contrast}
-                        onChange={(e) => setContrast(e.target.value)}
-                        min="-100"
-                        max="100"
-                        className="w-full"
-                    />
-                    <span>{contrast}</span>
-                </div>
-
-                {/* Grayscale */}
-                <div className="flex items-center space-x-2">
-                    <input
-                        type="checkbox"
-                        checked={grayscale}
-                        onChange={(e) => setGrayscale(e.target.checked)}
-                    />
-                    <label className="font-semibold">Grayscale</label>
-                </div>
+                {/*
+                  Sección de filtros removida de la UI pero las variables siguen existiendo arriba
+                  y se envían al backend internamente.
+                */}
 
                 {/* Submit Button */}
                 <button
@@ -119,8 +127,12 @@ export default function Dashboard() {
                     <h2 className="text-2xl font-bold mb-2">Palette:</h2>
                     <div className="flex space-x-2">
                         {palette.map((color, idx) => (
-                            <div key={idx} className="w-16 h-16 border" style={{ backgroundColor: color }}>
-                                {/* Empty – color swatch */}
+                            <div
+                                key={idx}
+                                className="w-16 h-16 border"
+                                style={{ backgroundColor: color }}
+                            >
+                                {/* If the backend returns percentages, you could display them here. */}
                             </div>
                         ))}
                     </div>
@@ -129,4 +141,3 @@ export default function Dashboard() {
         </div>
     );
 }
-
