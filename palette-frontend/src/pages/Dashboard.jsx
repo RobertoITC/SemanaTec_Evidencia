@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ColourfulText from '../components/ui/colourful-text.jsx';
 
 export default function Dashboard() {
+    const navigate = useNavigate();
+
     const [selectedFile, setSelectedFile] = useState(null);
     const [numColors, setNumColors] = useState(5);
     const [brightness, setBrightness] = useState(0);
@@ -9,6 +12,7 @@ export default function Dashboard() {
     const [grayscale, setGrayscale] = useState(false);
 
     const [palette, setPalette] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
 
     // Drag & Drop handlers
     const handleDrop = (e) => {
@@ -17,6 +21,7 @@ export default function Dashboard() {
             setSelectedFile(e.dataTransfer.files[0]);
         }
     };
+
     const handleDragOver = (e) => {
         e.preventDefault();
     };
@@ -25,11 +30,12 @@ export default function Dashboard() {
         e.preventDefault();
         if (!selectedFile) return;
 
+        setIsLoading(true);
+
         // Build FormData
         const formData = new FormData();
         formData.append('image', selectedFile);
         formData.append('n_colors', numColors);
-
         formData.append('brightness', brightness);
         formData.append('contrast', contrast);
         formData.append('grayscale', grayscale);
@@ -41,8 +47,18 @@ export default function Dashboard() {
             });
             const data = await response.json();
             setPalette(data.palette);
+
+            // Navigate to /results after success, passing data via state
+            navigate('/results', {
+                state: {
+                    palette: data.palette,
+                    imageURL: URL.createObjectURL(selectedFile),
+                },
+            });
         } catch (err) {
             console.error('Error:', err);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -54,9 +70,16 @@ export default function Dashboard() {
                 </h1>
             </div>
 
+            {/* If we're loading, show a centered spinner overlay */}
+            {isLoading && (
+                <div className="fixed inset-0 bg-white bg-opacity-70 flex items-center justify-center z-50">
+                    <div className="loader ease-linear rounded-full border-4 border-t-4 border-blue-200 h-12 w-12 animate-spin" />
+                </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="flex space-x-4">
-                    {/* Left Section: Text */}
+                    {/* Left Section: Description */}
                     <div className="w-1/2">
                         <p className="text-lg font-medium text-gray-500">
                             Upload your image to extract the color palette
@@ -68,7 +91,6 @@ export default function Dashboard() {
                         onDrop={handleDrop}
                         onDragOver={handleDragOver}
                         className="w-1/2 border-1 border-white rounded-lg p-6 cursor-pointer text-lg font-medium h-80 shadow-lg"
-
                     >
                         {selectedFile ? (
                             <p className="text-center font-semibold">File: {selectedFile.name}</p>
@@ -100,7 +122,7 @@ export default function Dashboard() {
                 </button>
             </form>
 
-            {/* Palette Display */}
+            {/* Palette Display (only needed if you want to see the result on the same page) */}
             {palette.length > 0 && (
                 <div className="mt-6">
                     <h2 className="text-2xl font-bold mb-2">Palette:</h2>
@@ -110,9 +132,7 @@ export default function Dashboard() {
                                 key={idx}
                                 className="w-16 h-16 border"
                                 style={{ backgroundColor: color }}
-                            >
-                                {/* If the backend returns percentages, you could display them here. */}
-                            </div>
+                            />
                         ))}
                     </div>
                 </div>
