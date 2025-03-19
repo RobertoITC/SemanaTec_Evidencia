@@ -27,12 +27,52 @@ Proporciona la interfaz de usuario para subir imágenes y mostrar los colores do
 
 Define un endpoint principal que recibe la imágen y extrae los clusters de colores
 
-## Flujo de la app:
-1. El usuario sube una imagen a la aplicación
-2. Flask recibe la imagen y la envía al backend
-3. OpenCV permite que se procese la imagen y extrae sus colores en formato númerico
-4.Con la libreria de scikit-lear se agrupan los colores similares para después poder realizar el calculo del porcentaje de cada uno
-5. La librería de numpy es utilizada para realizar cálculos matemáticos sobre los pixeles de la imagen, además de permitir manejar matrices de datos para analizar la distribución de colores
-6. Flask devuelve los datos al usuario en un formato visual
+1. **Subida de la Imagen**  
+   El usuario selecciona o arrastra una imagen al formulario de React.  
+
+2. **Envío al Backend**  
+   El frontend llama a un endpoint del servidor Flask (por ejemplo, `POST /process-image`) y adjunta la imagen.
+
+3. **Procesamiento en Flask**  
+   - **Lectura con OpenCV**:  
+     Convierte la imagen en un arreglo de píxeles y obtiene su representación en canales de color.  
+   - **Agrupamiento con Scikit-learn**:  
+     Se ejecuta un algoritmo (generalmente K-means) para clasificar los píxeles en grupos de color predominantes.  
+   - **Cálculos con NumPy**:  
+     Se cuantifica la proporción de cada clúster dividiendo la cuenta de píxeles de dicho clúster entre el total de píxeles.  
+
+4. **Respuesta al Frontend**  
+   Flask envía la data procesada en formato JSON, incluyendo:  
+   - El color dominante en formato RGB/HEX.  
+   - El porcentaje relativo de cada color detectado.  
+
+5. **Visualización de Resultados**  
+   El frontend recibe la respuesta y la muestra al usuario en un **panel de colores** con la proporción y/o en formato gráfico (barras, anillos, etc.).
+---
+
+## Local deployment
+### Frontend
+
+```
+cd palette-frontend
+npm install
+npm run dev
+```
+Frontend web app normalmente se corre en el purto http://localhost:5173
+### Backend
+```
+cd palette-backend
+pip install -r requirements.txt
+python app.py
+```
+Backend server normalmente se corre en el purto http://localhost:5000
+
+---
+Hecho por: 
+- Hannia Peña 
+- Roberto Morales
+
+
+
 
 
